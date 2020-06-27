@@ -1,7 +1,8 @@
 import java.util.Arrays;
 
-public class BruteCollinearPoints {
+public class FastCollinearPoints {
     private final Point[] points;
+
     private LineSegmentList lineSegmentList;
 
     private class LineSegmentList {
@@ -56,7 +57,7 @@ public class BruteCollinearPoints {
         }
     }
 
-    public BruteCollinearPoints(Point[] points) {
+    public FastCollinearPoints(Point[] points) {
         if (points == null) {
             throw new IllegalArgumentException();
         }
@@ -76,6 +77,57 @@ public class BruteCollinearPoints {
         createLineSegmentList();
     }
 
+    private void createLineSegmentList() {
+        this.lineSegmentList = new LineSegmentList();
+
+        Point[] originPoints = new Point[points.length];
+
+        for (int i = 0; i < points.length; i++) {
+            originPoints[i] = points[i];
+        }
+
+        for (int i = 0; i < originPoints.length; i++) {
+            Point origin = originPoints[i];
+            Arrays.sort(points, origin.slopeOrder());
+
+            Point point1 = origin;
+            Point point2 = origin;
+
+            for (int j = 1; j < points.length; j++) {
+                if (origin.compareTo(points[j]) > 0) {
+                    continue;
+                }
+
+                Point point3 = points[j];
+
+                double slope1 = origin.slopeTo(point1);
+                double slope2 = origin.slopeTo(point2);
+                double slope3 = origin.slopeTo(point3);
+
+                if (slope1 == slope2 && slope1 == slope3) {
+                    lineSegmentList.addLineSegment(new LineSegment(origin, getMaxPoint(point1, point2, point3)));
+                }
+
+                point1 = point2;
+                point2 = point3;
+            }
+        }
+
+        lineSegmentList.adjustSize();
+    }
+
+    private Point getMaxPoint(Point a, Point b, Point c) {
+        if (a.compareTo(b) >= 0 && a.compareTo(c) >= 0) {
+            return a;
+        }
+        else if (b.compareTo(a) >= 0 && b.compareTo(c) >= 0) {
+            return b;
+        }
+        else {
+            return c;
+        }
+    }
+
     private void checkDuplicates() {
         Point prev = null;
 
@@ -88,39 +140,9 @@ public class BruteCollinearPoints {
         }
     }
 
-    private void createLineSegmentList() {
-        this.lineSegmentList = new LineSegmentList();
-
-        for (int i = 0; i < points.length; i++) {
-            for (int j = i + 1; j < points.length; j++) {
-                for (int k = j + 1; k < points.length; k++) {
-                    for (int p = k + 1; p < points.length; p++) {
-                        if (points[i] == null || points[j] == null || points[k] == null || points[p] == null) {
-                            throw new IllegalArgumentException();
-                        }
-
-                        if (points[i] == points[j] || points[i] == points[k] || points[i] == points[p] ||
-                            points[j] == points[k] || points[j] == points[p] || points[k] == points[p]) {
-                            throw new IllegalArgumentException();
-                        }
-
-                        double slope1 = points[i].slopeTo(points[j]);
-                        double slope2 = points[i].slopeTo(points[k]);
-                        double slope3 = points[i].slopeTo(points[p]);
-
-                        if (slope1 == slope2 && slope2 == slope3) {
-                            lineSegmentList.addLineSegment(new LineSegment(points[i], points[p]));
-                        }
-                    }
-                }
-            }
-        }
-
-        lineSegmentList.adjustSize();
-    }
-
     public int numberOfSegments() {
         return lineSegmentList.size();
+
     }
 
     public LineSegment[] segments() {
